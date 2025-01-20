@@ -45,8 +45,6 @@ class FlexAttentionLayer(torch.nn.Module):
 
         self.flex_attention = torch.compile(flex_attention)
 
-        # NOTE(thuaj); here we following the nanogpt implementation but using flex_attention
-        # and our local pair mask and relative positional embedding
         # key, query, value projections for all heads, but in a batch
         self.c_attn = nn.Linear(self.n_embd, self.n_embd * 3, bias=self.bias)
         self.q = nn.Linear(self.n_embd, self.n_embd, bias=self.bias)
@@ -129,7 +127,9 @@ class CustomModel(nn.Module):
         # Problem>>>>
         # If we adjust the bs, T and topk value, sometimes the code will raise an error
         # reduce the bs, T, topk value, somtimes avoid the error
+        # example bs=32 T =90 topk=32 will catch an error ->
         # RuntimeError: CUDA error: an illegal memory access was encountered
+        # bs=1 T=1 will run ok
         # And the output is more complex using my entire code.
         bs, T, D = 32, 90, 128
         A = torch.randint(8, 12, (1,)).item()
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     # I provided a simplicifed version of the code to mimic the workflow
     # The code catch an error, however, I'm not sure if it is the same error as I faced when I run the entire code
     # Test device 1：
-    # nvidia-smi: GeForce RTX 3090 NVIDIA-SMI 550.127.05 Driver Version: 550.127.05 CUDA Version: 12.4
+    # nvidia-smi: GeForce RTX 3090 24G NVIDIA-SMI 550.127.05 Driver Version: 550.127.05 CUDA Version: 12.4
     # nvcc --version:
     # nvcc: NVIDIA (R) Cuda compiler driver
     # Copyright (c) 2005-2022 NVIDIA Corporation
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     # Build cuda_11.8.r11.8/compiler.31833905_0
     # pytorch 2.7.0.dev20250112+cu118
     # Test device 2:
-    # nvidia-smi: NVIDIA RTX A6000  NVIDIA-SMI 535.98 Driver Version: 535.98 CUDA Version: 12.2
+    # nvidia-smi: NVIDIA RTX A6000 48G NVIDIA-SMI 535.98 Driver Version: 535.98 CUDA Version: 12.2
     # nvcc --version:
     # nvcc: NVIDIA (R) Cuda compiler driver
     # Copyright (c) 2005-2022 NVIDIA Corporation
@@ -214,7 +214,6 @@ if __name__ == "__main__":
     # Cuda compilation tools, release 11.8, V11.8.89
     # Build cuda_11.8.r11.8/compiler.31833905_0
     # pytorch 2.7.0.dev20250116+cu118
-    # ===> Loading data
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = CustomModel().to(device)
